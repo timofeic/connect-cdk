@@ -9,7 +9,7 @@ setuptools.setup(
     name="connect_cdk",
     version="0.0.1",
 
-    description="An empty CDK Python app",
+    description="Amazon Connect Sample",
     long_description=long_description,
     long_description_content_type="text/markdown",
 
@@ -19,7 +19,11 @@ setuptools.setup(
     packages=setuptools.find_packages(where="connect_cdk"),
 
     install_requires=[
-        "aws-cdk.core==1.77.0",
+        "aws-cdk.core",
+        "aws-cdk.aws_lambda",
+        "aws-cdk.aws_iam",
+        "aws-cdk.custom_resources",
+        "crhelper",
     ],
 
     python_requires=">=3.6",
