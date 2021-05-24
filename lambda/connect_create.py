@@ -23,37 +23,16 @@ except Exception as e:
 
 @helper.create
 def create(event, context):
-    logger.info("Resource Created")
+    logger.debug("[Event] %s", event)
 
     response = connect.create_instance(
         IdentityManagementType='CONNECT_MANAGED',
-        InstanceAlias='cheungt-test-lon',
+        InstanceAlias='cheungt-test-lon2',
         InboundCallsEnabled=True,
         OutboundCallsEnabled=True
     )
-    logger.info('Response: %s', response)
-
-    connect.create_user(
-        Username='admin',
-        Password='Passw0rd',
-        IdentityInfo={
-            'FirstName': 'Admin',
-            'LastName': 'istrator',
-            'Email': 'admin@example.com'
-        },
-        PhoneConfig={
-            'PhoneType': 'SOFT_PHONE',
-            'AutoAccept': False,
-            'AfterContactWorkTimeLimit': 0,
-        },
-        SecurityProfileIds=[
-            'Admin',
-        ],
-        RoutingProfileId='Basic Routing Profile',
-        InstanceId=response["Id"],
-    )
-
-    return response["Id"]
+    logger.info('[Response] %s', response)
+    return response
 
 
 @helper.update
@@ -66,11 +45,13 @@ def update(event, context):
 
 @helper.delete
 def delete(event, context):
-    logger.info("Resource Deleted")
     
+    logger.debug("[Event] %s", event)
     response = connect.delete_instance(
         InstanceId='cheungt-test-lon'
     )
+    logger.info("Resource Deleted")
+    return response
 
 
 def handler(event, context):
