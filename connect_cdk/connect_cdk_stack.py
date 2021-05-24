@@ -17,11 +17,12 @@ class ConnectCdkStack(core.Stack):
                 self, 'ConnectHandler',
                 runtime=_lambda.Runtime.PYTHON_3_7,
                 code=_lambda.Code.asset('lambda'),
-                handler='connect.handler',
+                handler='connect_create.handler',
             )
 
         on_event.add_to_role_policy(iam.PolicyStatement(
             actions=["connect:CreateInstance",
+                    "connect:DeleteInstance",
                     "ds:CreateAlias",
                     "ds:AuthorizeApplication",
                     "ds:UnauthorizeApplication",
