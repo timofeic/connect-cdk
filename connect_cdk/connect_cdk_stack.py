@@ -13,11 +13,17 @@ class ConnectCdkStack(core.Stack):
     def __init__(self, scope: core.Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
+        instance_alias = self.node.try_get_context("instance_alias")
+
         on_event = _lambda.Function(
                 self, 'ConnectHandler',
                 runtime=_lambda.Runtime.PYTHON_3_7,
                 code=_lambda.Code.asset('lambda'),
                 handler='connect_create.handler',
+                log_retention=logs.RetentionDays.ONE_DAY,
+                environment={
+                    "InstanceAlias": instance_alias
+                }
             )
 
         on_event.add_to_role_policy(iam.PolicyStatement(
