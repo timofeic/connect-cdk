@@ -43,4 +43,4 @@ class ConnectCdkStack(core.Stack):
             log_retention=logs.RetentionDays.ONE_DAY
         )
 
-        CustomResource(self, "Resource1", service_token=my_provider.service_token)
+        CustomResource(self, "ConnectInstance", service_token=my_provider.service_token)

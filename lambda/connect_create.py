@@ -27,7 +27,7 @@ def create(event, context):
 
     response = connect.create_instance(
         IdentityManagementType='CONNECT_MANAGED',
-        InstanceAlias='cheungt-test-lon2',
+        InstanceAlias='cheungt-test-lon2', #todo change this to an environment variable that can be set in cdk.
         InboundCallsEnabled=True,
         OutboundCallsEnabled=True
     )
