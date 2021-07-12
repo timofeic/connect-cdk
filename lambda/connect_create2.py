@@ -40,7 +40,16 @@ def on_update(event):
 def on_delete(event):
     physical_id = event["PhysicalResourceId"]
     print("delete resource %s" % physical_id)
-    # ...
+    connect_alias = os.environ['InstanceAlias']
+    
+    response = connect.list_instances()
+    print(len(response["InstanceSummaryList"]))
+    for i in response["InstanceSummaryList"]:
+        if i["InstanceAlias"] == connect_alias:
+            print("Deleting Instance Id %s" % i["Id"])
+            delete_instance = connect.delete_instance(
+                InstanceId=i["Id"]
+            )
 
 def is_complete(event, context):
     physical_id = event["PhysicalResourceId"]
