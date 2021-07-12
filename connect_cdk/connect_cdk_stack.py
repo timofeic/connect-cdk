@@ -68,6 +68,7 @@ class ConnectCdkStack(core.Stack):
                 "connect:DescribeInstance",
                 "connect:ListLambdaFunctions",
                 "connect:ListLexBots",
+                "connect:ListInstances",
                 "connect:ListInstanceStorageConfigs",
                 "connect:ListApprovedOrigins",
                 "connect:ListSecurityKeys",
@@ -144,4 +145,102 @@ class ConnectCdkStack(core.Stack):
             value = connect_attr_resource.get_att_string("DemoQueueId")
         )
 
-        
+        lex_role = iam.Role(self, "LexRole",
+            assumed_by=iam.ServicePrincipal("lexv2.amazonaws.com")
+        )
+
+        lex_role.add_to_policy(iam.PolicyStatement(
+            resources=["*"],
+            actions=["polly:SynthesizeSpeech"]
+        ))
+
+        lex_on_event = _lambda.Function(
+            self, 'LexOnEventHandler',
+            runtime=_lambda.Runtime.PYTHON_3_7,
+            code=_lambda.Code.asset('lambda'),
+            handler='lex_bot.on_event',
+            log_retention=logs.RetentionDays.ONE_DAY,
+            environment={
+                "RoleArn": lex_role.role_arn
+            }
+        )
+
+        lex_is_complete = _lambda.Function(
+            self, 'LexIsCompleteHandler',
+            runtime=_lambda.Runtime.PYTHON_3_7,
+            code=_lambda.Code.asset('lambda'),
+            handler='lex_bot.is_complete',
+            log_retention=logs.RetentionDays.ONE_DAY,
+            environment={
+                "RoleArn": lex_role.role_arn
+            }
+        )
+
+        lex_on_event.add_to_role_policy(iam.PolicyStatement(
+            actions=[
+                "lex:CreateBot",
+                "lex:CreateBotLocale",
+                "lex:CreateIntent",
+                "lex:CreateSlot",
+                "lex:DeleteBot",
+                "lex:DeleteBotLocale",
+                "lex:ListBots",
+                "iam:PassRole"
+            ],
+            resources=["*"]
+        ))
+
+        lex_is_complete.add_to_role_policy(iam.PolicyStatement(
+            actions=[
+                "lex:ListBots",
+                "iam:PassRole"
+            ],
+            resources=["*"]
+        ))
+
+        lex_provider = cr.Provider(self, "LexProvider",
+            on_event_handler=lex_on_event,
+            is_complete_handler=lex_is_complete,
+            log_retention=logs.RetentionDays.ONE_DAY,
+            query_interval=core.Duration.seconds(10),
+            total_timeout=core.Duration.minutes(5)
+        )
+
+        lex_resource = CustomResource(self, "LexBot", service_token=lex_provider.service_token)
+
+        bot_id = lex_resource.get_att_string("BotId")
+
+        CfnOutput(
+            self, "BotId",
+            description="Amazon Lex Bot ID",
+            value = bot_id
+        )
+
+        lex_on_event2 = _lambda.Function(
+            self, 'LexAttrOnEventHandler',
+            runtime=_lambda.Runtime.PYTHON_3_7,
+            code=_lambda.Code.asset('lambda'),
+            handler='lex_bot_attributes.on_event',
+            log_retention=logs.RetentionDays.ONE_DAY,
+            environment={
+                "BotId": bot_id
+            }
+        )
+
+        lex_on_event2.add_to_role_policy(iam.PolicyStatement(
+            actions=[
+                "lex:CreateBotLocale",
+                "lex:CreateIntent",
+                "lex:CreateSlot",
+                "lex:ListBots",
+                "iam:PassRole"
+            ],
+            resources=["*"]
+        ))
+
+        lex_attr_provider = cr.Provider(self, "LexAttrProvider",
+            on_event_handler=lex_on_event2,
+            log_retention=logs.RetentionDays.ONE_DAY
+        )
+
+        lex_attr_resource = CustomResource(self, "LexBotAttributes", service_token=lex_attr_provider.service_token)

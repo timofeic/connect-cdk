@@ -43,13 +43,13 @@ def on_delete(event):
     connect_alias = os.environ['InstanceAlias']
     
     response = connect.list_instances()
-    print(len(response["InstanceSummaryList"]))
     for i in response["InstanceSummaryList"]:
-        if i["InstanceAlias"] == connect_alias:
-            print("Deleting Instance Id %s" % i["Id"])
-            delete_instance = connect.delete_instance(
-                InstanceId=i["Id"]
-            )
+        if i['InstanceStatus'] == 'ACTIVE':
+            if i["InstanceAlias"] == connect_alias:
+                print("Deleting Instance Id %s" % i["Id"])
+                delete_instance = connect.delete_instance(
+                    InstanceId=i["Id"]
+                )
 
 def is_complete(event, context):
     physical_id = event["PhysicalResourceId"]
@@ -71,6 +71,13 @@ def is_complete(event, context):
     if request_type == 'Update':
         is_ready = True
     if request_type == 'Delete':
-        is_ready = True
+        connect_alias = os.environ['InstanceAlias']
+
+        response = connect.list_instances()
+        for i in response["InstanceSummaryList"]:
+            if i["InstanceAlias"] == connect_alias:
+                is_ready = False
+            else:
+                is_ready = True
 
     return { 'IsComplete': is_ready }
