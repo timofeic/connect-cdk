@@ -15,7 +15,7 @@ Amazon Connect currently does not have CloudFormation support, so we need to use
 1. Clone the repo
 1. cd into the repo directory
 1. `source .venv/bin/activate`
-1. (If not already done) bootstrap your environment using ``` $ cdk bootstrap ```
 1. `pip install -r requirements.txt`
+1. (If not already done) bootstrap your environment using ``` $ cdk bootstrap ```
 1. Modify the instance_alias in cdk.json
 1. `cdk deploy`
