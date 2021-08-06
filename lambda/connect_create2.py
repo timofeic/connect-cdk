@@ -74,10 +74,14 @@ def is_complete(event, context):
         connect_alias = os.environ['InstanceAlias']
 
         response = connect.list_instances()
-        for i in response["InstanceSummaryList"]:
-            if i["InstanceAlias"] == connect_alias:
-                is_ready = False
-            else:
-                is_ready = True
+        if not response["InstanceSummaryList"]:
+            is_ready = True
+        else:
+            for i in response["InstanceSummaryList"]:
+                print(i)
+                if i["InstanceAlias"] == connect_alias:
+                    is_ready = False
+                else:
+                    is_ready = True
 
     return { 'IsComplete': is_ready }
