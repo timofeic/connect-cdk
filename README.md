@@ -17,5 +17,5 @@ Amazon Connect currently does not have CloudFormation support, so we need to use
 1. `source .venv/bin/activate`
 1. `pip install -r requirements.txt`
 1. (If not already done) bootstrap your environment using ``` $ cdk bootstrap ```
-1. Modify the instance_alias in cdk.json
+1. Modify the parameters in cdk.json, lex_locale must match a code in https://docs.aws.amazon.com/lexv2/latest/dg/how-languages.html
 1. `cdk deploy`
