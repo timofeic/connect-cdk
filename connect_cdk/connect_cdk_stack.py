@@ -1,5 +1,5 @@
 from aws_cdk import (
-    core,
+    core as cdk,
     aws_lambda as _lambda,
     aws_iam as iam
 )
@@ -9,12 +9,13 @@ import aws_cdk.aws_logs as logs
 import aws_cdk.custom_resources as cr
 
 
-class ConnectCdkStack(core.Stack):
+class ConnectCdkStack(cdk.Stack):
 
-    def __init__(self, scope: core.Construct, construct_id: str, **kwargs) -> None:
+    def __init__(self, scope: cdk.Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         instance_alias = self.node.try_get_context("instance_alias")
+        lex_locale_code = self.node.try_get_context("lex_locale_code")
 
         on_event = _lambda.Function(
                 self, 'ConnectOnEventHandler',
@@ -83,8 +84,8 @@ class ConnectCdkStack(core.Stack):
             on_event_handler=on_event,
             is_complete_handler=is_complete,
             log_retention=logs.RetentionDays.ONE_DAY,
-            query_interval=core.Duration.seconds(10),
-            total_timeout=core.Duration.minutes(5)
+            query_interval=cdk.Duration.seconds(10),
+            total_timeout=cdk.Duration.minutes(5)
         )
 
         connect_resource = CustomResource(self, "ConnectInstance", service_token=connect_provider.service_token)
@@ -111,7 +112,8 @@ class ConnectCdkStack(core.Stack):
             log_retention=logs.RetentionDays.ONE_DAY,
             environment={
                 "InstanceId": instance_id
-            }
+            },
+            timeout=cdk.Duration.seconds(15)
         )
 
         on_event2.add_to_role_policy(iam.PolicyStatement(
@@ -179,11 +181,15 @@ class ConnectCdkStack(core.Stack):
         lex_on_event.add_to_role_policy(iam.PolicyStatement(
             actions=[
                 "lex:CreateBot",
-                "lex:CreateBotLocale",
-                "lex:CreateIntent",
-                "lex:CreateSlot",
                 "lex:DeleteBot",
+                "lex:DeleteBotAlias",
+                "lex:DeleteIntent",
+                "lex:DeleteUtterances",
+                "lex:DeleteSlot",
+                "lex:DeleteSlotType",
+                "lex:DeleteBotChannel",
                 "lex:DeleteBotLocale",
+                "lex:DeleteBotVersion",
                 "lex:ListBots",
                 "iam:PassRole"
             ],
@@ -202,8 +208,8 @@ class ConnectCdkStack(core.Stack):
             on_event_handler=lex_on_event,
             is_complete_handler=lex_is_complete,
             log_retention=logs.RetentionDays.ONE_DAY,
-            query_interval=core.Duration.seconds(10),
-            total_timeout=core.Duration.minutes(5)
+            query_interval=cdk.Duration.seconds(10),
+            total_timeout=cdk.Duration.minutes(5)
         )
 
         lex_resource = CustomResource(self, "LexBot", service_token=lex_provider.service_token)
@@ -216,20 +222,75 @@ class ConnectCdkStack(core.Stack):
             value = bot_id
         )
 
-        lex_on_event2 = _lambda.Function(
-            self, 'LexAttrOnEventHandler',
+        lex_bot_locale = _lambda.Function(
+            self, 'LexLocaleOnEventHandler',
             runtime=_lambda.Runtime.PYTHON_3_7,
             code=_lambda.Code.asset('lambda'),
-            handler='lex_bot_attributes.on_event',
+            handler='lex_bot_locale.on_event',
             log_retention=logs.RetentionDays.ONE_DAY,
             environment={
-                "BotId": bot_id
+                "BotId": bot_id,
+                "LocaleId": lex_locale_code
+            },
+            timeout=cdk.Duration.seconds(15)
+        )
+
+        lex_bot_locale_complete = _lambda.Function(
+            self, 'LexLocaleIsCompleteHandler',
+            runtime=_lambda.Runtime.PYTHON_3_7,
+            code=_lambda.Code.asset('lambda'),
+            handler='lex_bot_locale.is_complete',
+            log_retention=logs.RetentionDays.ONE_DAY,
+            environment={
+                "BotId": bot_id,
+                "LocaleId": lex_locale_code
             }
         )
 
-        lex_on_event2.add_to_role_policy(iam.PolicyStatement(
+        lex_bot_locale.add_to_role_policy(iam.PolicyStatement(
             actions=[
                 "lex:CreateBotLocale",
+                "lex:ListBots",
+                "iam:PassRole"
+            ],
+            resources=["*"]
+        ))
+
+        lex_bot_locale_complete.add_to_role_policy(iam.PolicyStatement(
+            actions=[
+                "lex:DescribeBotLocale",
+                "iam:PassRole"
+            ],
+            resources=["*"]
+        ))
+
+        lex_bot_locale_provider = cr.Provider(self, "LexLocaleProvider",
+            on_event_handler=lex_bot_locale,
+            is_complete_handler=lex_bot_locale_complete,
+            log_retention=logs.RetentionDays.ONE_DAY,
+            query_interval=cdk.Duration.seconds(10),
+            total_timeout=cdk.Duration.minutes(5)
+        )
+
+        lex_bot_locale_resource = CustomResource(self, "LexBotLocale", service_token=lex_bot_locale_provider.service_token)
+
+        lex_locale_id = lex_bot_locale_resource.get_att_string("LocaleId")
+
+        lex_bot_intent = _lambda.Function(
+            self, 'LexIntentOnEventHandler',
+            runtime=_lambda.Runtime.PYTHON_3_7,
+            code=_lambda.Code.asset('lambda'),
+            handler='lex_bot_intent.on_event',
+            log_retention=logs.RetentionDays.ONE_DAY,
+            environment={
+                "BotId": bot_id,
+                "LocaleId": lex_locale_id
+            },
+            timeout=cdk.Duration.seconds(15)
+        )
+
+        lex_bot_intent.add_to_role_policy(iam.PolicyStatement(
+            actions=[
                 "lex:CreateIntent",
                 "lex:CreateSlot",
                 "lex:ListBots",
@@ -238,9 +299,10 @@ class ConnectCdkStack(core.Stack):
             resources=["*"]
         ))
 
-        lex_attr_provider = cr.Provider(self, "LexAttrProvider",
-            on_event_handler=lex_on_event2,
-            log_retention=logs.RetentionDays.ONE_DAY
+        lex_bot_intent_provider = cr.Provider(self, "LexIntentProvider",
+            on_event_handler=lex_bot_intent,
+            log_retention=logs.RetentionDays.ONE_DAY,
         )
 
-        lex_attr_resource = CustomResource(self, "LexBotAttributes", service_token=lex_attr_provider.service_token)
+        lex_bot_intent_resource = CustomResource(self, "LexBotIntent", service_token=lex_bot_intent_provider.service_token)
+
