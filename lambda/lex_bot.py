@@ -28,7 +28,7 @@ def on_create(event):
 
     return { 'PhysicalResourceId': 'LexBot-DUE',
         'Data': {
-            'BotId': lex_bot['botId']
+            'BotId': lex_bot["botId"]
         }
     }
 
