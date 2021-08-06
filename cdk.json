@@ -6,6 +6,7 @@
     "@aws-cdk/core:stackRelativeExports": "true",
     "@aws-cdk/aws-ecr-assets:dockerIgnoreSupport": true,
     "@aws-cdk/aws-secretsmanager:parseOwnedSecretName": true,
-    "instance_alias": ""
+    "instance_alias": "<Unique Alias>",
+    "lex_locale_code": "en_GB"
   }
 }
