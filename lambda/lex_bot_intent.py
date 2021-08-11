@@ -1,5 +1,6 @@
 import boto3
 import os
+import time
 
 lex = boto3.client('lexv2-models')
 
@@ -17,11 +18,29 @@ def on_create(event):
     bot_id = os.environ['BotId']
     locale_id = os.environ['LocaleId']
 
+    utility_slot_type = lex.create_slot_type(
+        slotTypeName='UtilityType',
+        description='Gas or Electricity utility type',
+        slotTypeValues=[
+            {
+                'sampleValue': { 'value': 'gas' },
+            },
+            {
+                'sampleValue': { 'value': 'electricity' },
+            }
+        ],
+        valueSelectionSetting={
+            'resolutionStrategy': 'OriginalValue'
+        },
+        botId=bot_id,
+        botVersion='DRAFT',
+        localeId=locale_id
+    )
+
     meter_reading_intent = lex.create_intent(
         intentName='MeterReading',
         sampleUtterances=[
             { 'utterance': 'submit a meter reading' },
-            { 'utterance': 'enter reading' },
             { 'utterance': 'enter reading' },
             { 'utterance': 'reading my meter' },
             { 'utterance': 'submit a {UtilityType} reading' },
@@ -49,7 +68,70 @@ def on_create(event):
         locale_id
     )
 
-    return { 'PhysicalResourceId': 'LexBotAttr-DUE' }
+    reading_slot = slot(
+        'Reading', 
+        'AMAZON.PhoneNumber', 
+        'What is the meter reading? This should be 6 digits, including any zeros. Ignore the number in red, plus any after a decimal point.', 
+        meter_reading_intent["intentId"],
+        bot_id,
+        locale_id
+    )
+
+    vcode_slot = slot(
+        'vcode', 
+        'AMAZON.PhoneNumber', 
+        'What is your one time verification number?', 
+        meter_reading_intent["intentId"],
+        bot_id,
+        locale_id
+    )
+
+    utility_slot = slot(
+        'UtilityType', 
+        utility_slot_type["slotTypeId"], 
+        'Is this for a Gas or Electricity reading?', 
+        meter_reading_intent["intentId"],
+        bot_id,
+        locale_id
+    )
+
+    build = lex.build_bot_locale(
+        botId=bot_id,
+        botVersion='DRAFT',
+        localeId=locale_id
+    )
+
+    version = lex.create_bot_version(
+        botId=bot_id,
+        botVersionLocaleSpecification={
+            'en_GB': {
+                'sourceBotVersion': 'DRAFT'
+            }
+        }
+    )
+    time.sleep(3)
+
+    while True:
+        check_bot_version = lex.describe_bot_version(
+            botId=bot_id,
+            botVersion=version["botVersion"]
+        )
+        if check_bot_version["botStatus"] == "Available":
+            break
+        time.sleep(1)
+
+    alias = lex.create_bot_alias(
+        botId=bot_id,
+        botAliasName='PROD',
+        botVersion=version["botVersion"]
+    )
+
+    return { 'PhysicalResourceId': 'LexBotAttr-DUE',
+        'Data': {
+            'BotAlias': 'PROD',
+            'BotAliasId': alias["botAliasId"]
+        } 
+    }
 
 def on_update(event):
     physical_id = event["PhysicalResourceId"]
@@ -87,8 +169,3 @@ def slot(slot_name, slot_type_id, message, intent_id, bot_id, locale_id):
         localeId=locale_id,        
         intentId=intent_id
     )
-
-
-
-
-
