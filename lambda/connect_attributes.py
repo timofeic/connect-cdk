@@ -1,5 +1,6 @@
 import boto3
 import os
+import time
 
 connect = boto3.client('connect')
 
@@ -15,6 +16,10 @@ def on_create(event):
     props = event["ResourceProperties"]
     print("create new resource with props %s" % props)
     instance_id = os.environ['InstanceId']
+    key_arn = os.environ['KeyArn']
+    bucket_name = os.environ['BucketName']
+    recording_prefix = os.environ['RecordingPrefix']
+    transcript_prefix = os.environ['TranscriptPrefix']
 
     list_hours = connect.list_hours_of_operations(
         InstanceId=instance_id,
@@ -43,6 +48,22 @@ def on_create(event):
 
     contact_flow_id = create_contact_flow["ContactFlowId"]
 
+    recordings_s3_storage = s3_storage_config(
+        instance_id,
+        'CALL_RECORDINGS',
+        bucket_name,
+        recording_prefix,
+        key_arn
+    )
+
+    transcripts_s3_storage = s3_storage_config(
+        instance_id,
+        'CHAT_TRANSCRIPTS',
+        bucket_name,
+        transcript_prefix,
+        key_arn
+    )
+
     physical_id = "ConnectInstanceAttributes"
 
     return { 'PhysicalResourceId': physical_id,
@@ -64,3 +85,20 @@ def on_delete(event):
     print("delete resource %s" % physical_id)
     # ...
     return { 'PhysicalResourceId': physical_id }
+
+def s3_storage_config(instance_id, resource_type, bucket_name, bucket_prefix, key_arn):
+    storage_config = connect.associate_instance_storage_config(
+        InstanceId=instance_id,
+        ResourceType=resource_type,
+        StorageConfig={
+            'StorageType': 'S3',
+            'S3Config': {
+                'BucketName': bucket_name,
+                'BucketPrefix': bucket_prefix,
+                'EncryptionConfig': {
+                    'EncryptionType': 'KMS',
+                    'KeyId': key_arn
+                }
+            }
+        }
+    )

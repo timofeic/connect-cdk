@@ -6,7 +6,10 @@
     "@aws-cdk/core:stackRelativeExports": "true",
     "@aws-cdk/aws-ecr-assets:dockerIgnoreSupport": true,
     "@aws-cdk/aws-secretsmanager:parseOwnedSecretName": true,
-    "instance_alias": "<Unique Alias>",
-    "lex_locale_code": "en_GB"
+    "instance_alias": "<Unique_Alias>",
+    "lex_locale_code": "en_GB",
+    "connect_s3_bucket": "",
+    "recording_s3_prefix": "recordings",
+    "transcript_s3_prefix": "transcripts"
   }
 }
