@@ -19,4 +19,7 @@ Amazon Connect currently does not have CloudFormation support, so we need to use
 1. `pip install -r requirements.txt`
 1. (If not already done) bootstrap your environment using ``` $ cdk bootstrap ```
 1. Modify the parameters in cdk.json, lex_locale must match a code in https://docs.aws.amazon.com/lexv2/latest/dg/how-languages.html
-1. `cdk deploy`
+1. `./cdk-deploy-to.sh <aws_account_number> <region> <stack_name|--all> "$@"` e.g. cdk-deploy-to.sh 123456789012 eu-west-2 --all "$@"
+
+# Clean up
+1. `./cdk-destroy-to.sh <aws_account_number> <region> <stack_name|--all> "$@"`
