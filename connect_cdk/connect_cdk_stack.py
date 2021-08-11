@@ -158,7 +158,6 @@ class ConnectCdkStack(cdk.Stack):
                 "connect:ListInstances",
                 "connect:AssociateInstanceStorageConfig",
                 "ds:DescribeDirectories",
-                "ds:DescribeDirectories",
                 "firehose:DescribeDeliveryStream",
                 "iam:AttachRolePolicy",
                 "iam:CreateServiceLinkedRole",
