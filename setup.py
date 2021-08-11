@@ -21,6 +21,7 @@ setuptools.setup(
     install_requires=[
         "aws-cdk.core",
         "aws-cdk.aws_lambda",
+        "aws-cdk.aws_dynamodb",
         "aws-cdk.aws_iam",
         "aws-cdk.custom_resources",
         "crhelper",
