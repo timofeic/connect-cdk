@@ -28,7 +28,8 @@ def on_create(event):
 
     return { 'PhysicalResourceId': 'LexBot-DUE',
         'Data': {
-            'BotId': lex_bot["botId"]
+            'BotId': lex_bot["botId"],
+            'BotName': lex_bot["botName"]
         }
     }
 
@@ -58,8 +59,6 @@ def is_complete(event, context):
     print("Event object %s" % event)
 
     if request_type == 'Create':    
-        # We want to wait for the instance to be active before marking the resource as complete. 
-        # Otherwise subsequent calls will fail.
         list_bots = lex.list_bots()
         for i in list_bots["botSummaries"]:
             if i['botName'] == 'DUEBot':
